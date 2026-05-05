@@ -1,7 +1,11 @@
-const BASE_URL = import.meta.env.VITE_API_URL;
+const BASE_URL = import.meta.env.VITE_API_URL
 
 async function request(path, options = {}) {
-  const res = await fetch(`${BASE_URL}${path}`, {
+  const url = `${BASE_URL.replace(/\/$/, '')}${path}`
+
+  console.log("API CALL:", url) // debug
+
+  const res = await fetch(url, {
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
@@ -10,27 +14,64 @@ async function request(path, options = {}) {
     ...options,
   })
 
-  const data = await res.json()
+  let data
 
+  try {
+    data = await res.json()
+  } catch {
+    // 🔥 handle non-JSON safely
+    console.error("Invalid JSON response")
+    return { success: false }
+  }
+
+  // 🔥 DO NOT THROW (important)
   if (!res.ok) {
-    throw new Error(data.message || `Request failed with status ${res.status}`)
+    return {
+      success: false,
+      message: data.message || `Error ${res.status}`,
+    }
   }
 
   return data
 }
 
-// Auth
+// ✅ AUTH APIs
 export const authApi = {
-  register: (body) => request('/api/auth/register', { method: 'POST', body: JSON.stringify(body) }),
-  login: (body) => request('/api/auth/login', { method: 'POST', body: JSON.stringify(body) }),
-  getMe: () => request('/api/auth/get-me'),
-  verifyEmail: (token) => request(`/api/auth/verify-email?token=${token}`),
+  register: (body) =>
+    request('/api/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
+  login: (body) =>
+    request('/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
+  getMe: () =>
+    request('/api/auth/get-me'),
+
+  verifyEmail: (token) =>
+    request(`/api/auth/verify-email?token=${token}`),
 }
 
-// Chats
+// ✅ CHAT APIs
 export const chatsApi = {
-  sendMessage: (body) => request('/api/chats/message', { method: 'POST', body: JSON.stringify(body) }),
-  getChats: () => request('/api/chats'),
-  getMessages: (chatId) => request(`/api/chats/${chatId}/messages`),
-  deleteChat: (chatId) => request(`/api/chats/${chatId}`, { method: 'DELETE' }),
+  sendMessage: (body) =>
+    request('/api/chats/message', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
+  getChats: () =>
+    request('/api/chats'),
+
+  getMessages: (chatId) =>
+    request(`/api/chats/${chatId}/messages`),
+
+  deleteChat: (chatId) =>
+    request(`/api/chats/${chatId}`, {
+      method: 'DELETE',
+    }),
 }
